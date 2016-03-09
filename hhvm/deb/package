@@ -26,10 +26,11 @@ BUILD=$6
 DPACKAGE=$7
 NIGHTLY_DATE=`date +%Y.%m.%d`
 EXTRA_CMAKE_FLAGS=""
-NIGHTLY=false
+NIGHTLY=true
 DEBUG=false
 DEVONLY=false
 LTS=false
+PUBKEY=298767C7
 
 if [ ! -d $DISTRO_DIR ]; then
     echo "directory $DISTRO_DIR doesn't exist"
@@ -241,7 +242,7 @@ if [ ! -d $PACKAGE/root ]; then
 fi
 
 fakeroot -i $FAKEROOT dpkg -b $PACKAGE/root/ hhvm_${PACKAGE_VERSION}_amd64.deb
-dpkg-sig -k 452A652F --sign builder $PACKAGE/hhvm_${PACKAGE_VERSION}_amd64.deb
+dpkg-sig -k $PUBKEY --sign builder $PACKAGE/hhvm_${PACKAGE_VERSION}_amd64.deb
 
 if [ -z "$DPACKAGE" -o ! -d "$DPACKAGE" ]; then
     DPACKAGE=`mktemp -d`
@@ -280,17 +281,19 @@ if [ "$DEBUG" = false ]; then
     fi
 
     fakeroot -i $FAKEROOT dpkg -b $DPACKAGE/root/ hhvm_dev_${PACKAGE_VERSION}_amd64.deb
-    dpkg-sig -k 452A652F --sign builder $DPACKAGE/hhvm_dev_${PACKAGE_VERSION}_amd64.deb
+    dpkg-sig -k $PUBKEY --sign builder $DPACKAGE/hhvm_dev_${PACKAGE_VERSION}_amd64.deb
 fi
 
 SSH_KEY=$HOME/.ssh/id_rsa_phraseless
 STAGING=/var/tmp/staging/$DISTRO_NAME/
 RSYNC_HOST=ftp.osuosl.org
 
+echo "It is in $STAGING, yo"
+
 mkdir -p $STAGING
-rsync --delete -av -e "ssh -i $SSH_KEY" hiphop@$RSYNC_HOST:data/$DISTRO_NAME/ $STAGING || true
+# rsync --delete -av -e "ssh -i $SSH_KEY" hiphop@$RSYNC_HOST:data/$DISTRO_NAME/ $STAGING || true
 # do it twice since it takes so long something else might have pushed
-rsync --delete -av -e "ssh -i $SSH_KEY" hiphop@$RSYNC_HOST:data/$DISTRO_NAME/ $STAGING
+# rsync --delete -av -e "ssh -i $SSH_KEY" hiphop@$RSYNC_HOST:data/$DISTRO_NAME/ $STAGING
 
 REPREPRO="reprepro --keepunreferencedfiles --keepunusednewfiles includedeb"
 
